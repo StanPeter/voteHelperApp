@@ -7,23 +7,7 @@ generator client {
 
 datasource db {
     provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
     url      = env("DATABASE_URL")
-}
-
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
 }
 
 // Necessary for Next auth
@@ -62,7 +46,6 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
 }
 
 model VerificationToken {
@@ -71,4 +54,61 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+// Political App Models
+model PoliticalParty {
+  id              String            @id @default(cuid())
+  name            String
+  shortName       String?
+  logo            String?
+  color           String?
+  description     String            @db.Text
+  ideology        String[]
+  founded         DateTime?
+  website         String?
+  socialLinks     Json?
+  leaderName      String?
+  currentSeats    Int               @default(0)
+  electionResults ElectionResult[]
+  stances         PolicyStance[]
+}
+
+model PolicyArea {
+  id          String         @id @default(cuid())
+  name        String
+  description String?        @db.Text
+  stances     PolicyStance[]
+}
+
+model PolicyStance {
+  id            String       @id @default(cuid())
+  partyId       String
+  policyAreaId  String
+  stance        String       @db.Text
+  sourceUrl     String?
+  lastUpdated   DateTime     @default(now())
+  party         PoliticalParty @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  policyArea    PolicyArea   @relation(fields: [policyAreaId], references: [id], onDelete: Cascade)
+}
+
+model ElectionResult {
+  id        String         @id @default(cuid())
+  partyId   String
+  year      Int
+  votes     Int
+  seats     Int
+  voteShare Float
+  party     PoliticalParty @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([partyId, year])
+}
+
+model HelpResource {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  url         String?
+  type        String
+  createdAt   DateTime @default(now())
 }
